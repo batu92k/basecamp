@@ -50,11 +50,6 @@ class Command(BaseModel):
 TERMINAL_STATUSES = {CommandStatus.SUCCEEDED, CommandStatus.FAILED}
 
 
-def get_agent_id(x_agent_id: str = Header()) -> str:
-    """Who is calling. Placeholder: trusts a header. Later replace this with a token check."""
-    return x_agent_id
-
-
 class CommandResult(BaseModel):
     """What the agent sends back when it has finished a command."""
 
@@ -104,6 +99,11 @@ async def get_command(command_id: str) -> Command:
 # --- Agent API ---
 
 
+def get_agent_id(x_agent_id: str = Header()) -> str:
+    """Who is calling. Placeholder: trusts a header. Later replace this with a token check."""
+    return x_agent_id
+
+
 @app.get(
     "/agent/v1/commands/next",
     response_model=Command,
@@ -131,8 +131,10 @@ async def submit_result(
     new_status = CommandStatus(body.status)
     if command.status in TERMINAL_STATUSES:
         if command.status == new_status:
-            return command  # duplicate report (like a lost reply): accept, change nothing
-        raise HTTPException( # mismatched terminal state...
+            return (
+                command  # duplicate report (like a lost reply): accept, change nothing
+            )
+        raise HTTPException(  # mismatched terminal state...
             status_code=409, detail=f"Command already {command.status.value}"
         )
     if command.status != CommandStatus.DISPATCHED:
