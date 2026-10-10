@@ -40,6 +40,13 @@ class Command(BaseModel):
     status: CommandStatus
     result: dict | None = None
     created_at: datetime
+    error: str | None = None
+    dispatched_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+# these are the command statuses that can never change again
+TERMINAL_STATUSES = {CommandStatus.SUCCEEDED, CommandStatus.FAILED}
 
 
 # --- Endpoints ---
@@ -57,7 +64,7 @@ async def root():
     response_model=Command,
     status_code=status.HTTP_202_ACCEPTED,  # accepted, but not done yet since we will handle the command
 )
-def create_command(agent_id: str, body: CommandCreate) -> Command:
+async def create_command(agent_id: str, body: CommandCreate) -> Command:
     # agent_id comes from the URL path, body is parsed and validated from JSON.
     command = Command(
         id=str(uuid.uuid4()),  # unique id the caller uses to ask for the result
@@ -72,7 +79,7 @@ def create_command(agent_id: str, body: CommandCreate) -> Command:
 
 
 @app.get("/api/v1/commands/{command_id}", response_model=Command)
-def get_command(command_id: str) -> Command:
+async def get_command(command_id: str) -> Command:
     command = COMMANDS.get(command_id)
     if command is None:
         # Unknown id: return a proper 404, so don't crash
