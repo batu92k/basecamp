@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, HTTPException
 from enum import Enum
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
@@ -68,4 +68,13 @@ def create_command(agent_id: str, body: CommandCreate) -> Command:
         created_at=datetime.now(timezone.utc),
     )
     COMMANDS[command.id] = command
+    return command
+
+
+@app.get("/api/v1/commands/{command_id}", response_model=Command)
+def get_command(command_id: str) -> Command:
+    command = COMMANDS.get(command_id)
+    if command is None:
+        # Unknown id: return a proper 404, so don't crash
+        raise HTTPException(status_code=404, detail="Command not found")
     return command
