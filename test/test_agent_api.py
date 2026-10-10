@@ -53,6 +53,45 @@ def test_create_command_and_poll():
     response_json = client.get(NEXT, headers=AGENT).json()
 
     assert response_json["status"] == CommandStatus.DISPATCHED
-    
 
 
+def test_report_different_result():
+    #  create a command
+    command_id = create(agent_id=AGENT.get("X-Agent-Id", ""), type_=CommandType.ping)
+    response = client.get(f"/api/v1/commands/{command_id}")
+    response_json = response.json()
+
+    assert response.status_code == 200
+    assert response_json["status"] == CommandStatus.PENDING
+    assert response_json["id"] == command_id
+
+    #  poll the command
+    response_json = client.get(NEXT, headers=AGENT).json()
+
+    assert response_json["status"] == CommandStatus.DISPATCHED
+
+    # report success
+    response = report(command_id=command_id, status=CommandStatus.SUCCEEDED, headers=AGENT)
+
+    assert response.status_code == 200
+
+    # report failure for the same command and get 409
+    response = report(command_id=command_id, status=CommandStatus.FAILED, headers=AGENT)
+
+    assert response.status_code == 409
+
+
+def test_report_for_still_pending_command():
+    #  create a command
+    command_id = create(agent_id=AGENT.get("X-Agent-Id", ""), type_=CommandType.ping)
+    response = client.get(f"/api/v1/commands/{command_id}")
+    response_json = response.json()
+
+    assert response.status_code == 200
+    assert response_json["status"] == CommandStatus.PENDING
+    assert response_json["id"] == command_id
+
+    # report success and expect 409 (conflict)
+    response = report(command_id=command_id, status=CommandStatus.SUCCEEDED, headers=AGENT)
+
+    assert response.status_code == 409
