@@ -1,10 +1,10 @@
-from fastapi import FastAPI, status, HTTPException, Header, Depends, Response
-from enum import Enum
-from pydantic import BaseModel, Field
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from enum import Enum
 from typing import Literal
 
+from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="Fleet Server API")
 
