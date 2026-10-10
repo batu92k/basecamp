@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status, HTTPException
+from fastapi import FastAPI, status, HTTPException, Header, Depends, Response
 from enum import Enum
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
@@ -49,6 +49,11 @@ class Command(BaseModel):
 TERMINAL_STATUSES = {CommandStatus.SUCCEEDED, CommandStatus.FAILED}
 
 
+def get_agent_id(x_agent_id: str = Header()) -> str:
+    """Who is calling. Placeholder: trusts a header. Later replace this with a token check."""
+    return x_agent_id
+
+
 # --- Endpoints ---
 
 COMMANDS: dict[str, Command] = {}  # well... pre-database solution for now :)
@@ -85,3 +90,21 @@ async def get_command(command_id: str) -> Command:
         # Unknown id: return a proper 404, so don't crash
         raise HTTPException(status_code=404, detail="Command not found")
     return command
+
+
+# --- Agent API ---
+
+
+@app.get(
+    "/agent/v1/commands/next",
+    response_model=Command,
+    responses={204: {"description": "No command waiting"}},
+)
+async def next_command(agent_id: str = Depends(get_agent_id)):
+    """Find oldest command pending for specific agent and dispatch it"""
+    for command in COMMANDS.values():  # dicts keep insertion order: oldest first
+        if command.agent_id == agent_id and command.status == CommandStatus.PENDING:
+            command.status = CommandStatus.DISPATCHED
+            command.dispatched_at = datetime.now(timezone.utc)
+            return command
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
