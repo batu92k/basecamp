@@ -17,6 +17,7 @@ class CommandStatus(str, Enum):
     DISPATCHED = "DISPATCHED"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
+    TIMED_OUT = "TIMED_OUT"
 
 
 class CommandCreate(BaseModel):
@@ -35,10 +36,13 @@ class Command(BaseModel):
     payload: dict
     status: CommandStatus
     result: dict | None = None
-    created_at: datetime
     error: str | None = None
+    attempts: int = 0
+    max_attempts: int = 3
+    created_at: datetime
     dispatched_at: datetime | None = None
     completed_at: datetime | None = None
+    lease_expires_at: datetime | None = None
 
 
 class CommandResult(BaseModel):
@@ -50,4 +54,4 @@ class CommandResult(BaseModel):
 
 
 # these are the command statuses that can never change again
-TERMINAL_STATUSES = {CommandStatus.SUCCEEDED, CommandStatus.FAILED}
+TERMINAL_STATUSES = {CommandStatus.SUCCEEDED, CommandStatus.FAILED, CommandStatus.TIMED_OUT}
