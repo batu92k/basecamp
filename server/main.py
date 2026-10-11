@@ -3,7 +3,13 @@ from datetime import datetime, timezone
 
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
-from server.models import Command, CommandStatus, CommandCreate, CommandResult, TERMINAL_STATUSES 
+from server.models import (
+    Command,
+    CommandStatus,
+    CommandCreate,
+    CommandResult,
+    TERMINAL_STATUSES,
+)
 
 
 app = FastAPI(title="Fleet Server API")

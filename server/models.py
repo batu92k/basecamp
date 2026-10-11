@@ -54,4 +54,8 @@ class CommandResult(BaseModel):
 
 
 # these are the command statuses that can never change again
-TERMINAL_STATUSES = {CommandStatus.SUCCEEDED, CommandStatus.FAILED, CommandStatus.TIMED_OUT}
+TERMINAL_STATUSES = {
+    CommandStatus.SUCCEEDED,
+    CommandStatus.FAILED,
+    CommandStatus.TIMED_OUT,
+}
