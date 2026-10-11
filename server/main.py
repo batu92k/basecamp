@@ -21,13 +21,19 @@ def utcnow() -> datetime:
 
 
 @app.exception_handler(service.CommandNotFound)
-async def command_not_found(request: Request, exc: service.CommandNotFound) -> JSONResponse:
+async def command_not_found(
+    request: Request, exc: service.CommandNotFound
+) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": "Command not found"})
 
 
 @app.exception_handler(service.InvalidTransition)
-async def invalid_transition(request: Request, exc: service.InvalidTransition) -> JSONResponse:
-    return JSONResponse(status_code=409, content={"detail": f"Invalid transition: {exc}"})
+async def invalid_transition(
+    request: Request, exc: service.InvalidTransition
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=409, content={"detail": f"Invalid transition: {exc}"}
+    )
 
 
 # --- Endpoints ---
