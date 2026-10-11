@@ -132,6 +132,9 @@ def test_agent_reports_another_agents_command():
         command_id=command_id_agent_02, status=CommandStatus.SUCCEEDED, headers=AGENT_01
     )
 
+    assert response.status_code == 404
+
+
 def test_agent_polls_next_without_header():
     #  create a command
     command_id = create(agent_id=AGENT_01.get("X-Agent-Id", ""), type_=CommandType.ping)
