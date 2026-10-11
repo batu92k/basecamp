@@ -8,7 +8,6 @@ from server.models import (
     CommandStatus,
     CommandCreate,
     CommandResult,
-    TERMINAL_STATUSES,
 )
 
 from server import service
@@ -32,8 +31,6 @@ async def invalid_transition(request: Request, exc: service.InvalidTransition) -
 
 
 # --- Endpoints ---
-
-COMMANDS: dict[str, Command] = {}  # well... pre-database solution for now :)
 
 
 @app.get("/")
