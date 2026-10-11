@@ -33,7 +33,7 @@ def execute(command: dict) -> dict:
         }
     try:
         return {"status": "SUCCEEDED", "result": handler(command["payload"])}
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 (ruff ignore)
         return {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"}
 
 

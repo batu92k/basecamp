@@ -1,9 +1,9 @@
 """Command service: the only code that reads or changes commands."""
 
-from server.models import Command, CommandStatus, CommandType
-from datetime import datetime
 import uuid
+from datetime import datetime
 
+from server.models import Command, CommandStatus, CommandType
 
 COMMANDS: dict[str, Command] = {}  # well... pre-database solution for now :)
 

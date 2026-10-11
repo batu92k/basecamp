@@ -1,5 +1,7 @@
-import pytest
 from datetime import datetime, timezone
+
+import pytest
+
 from server import service
 from server.models import Command, CommandStatus, CommandType
 

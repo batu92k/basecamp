@@ -1,17 +1,15 @@
 from datetime import datetime, timezone
 
-
 from fastapi import Depends, FastAPI, Header, Request, Response, status
 from fastapi.responses import JSONResponse
-from server.models import (
-    Command,
-    CommandStatus,
-    CommandCreate,
-    CommandResult,
-)
 
 from server import service
-
+from server.models import (
+    Command,
+    CommandCreate,
+    CommandResult,
+    CommandStatus,
+)
 
 app = FastAPI(title="Fleet Server API")
 

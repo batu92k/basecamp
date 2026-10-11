@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from server import service
 from server.main import app
 from server.models import CommandStatus, CommandType
-from server import service
 
 client = TestClient(app)
 AGENT_01 = {"X-Agent-Id": "agent-001"}
