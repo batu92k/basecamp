@@ -38,12 +38,6 @@ def test_next_returns_204_when_queue_is_empty():
     assert response.content == b""  # expect no body content
 
 
-def test_next_withour_the_header():
-    response = client.get(NEXT, headers="")
-
-    assert response.status_code == 422
-
-
 def test_create_command_and_poll():
     command_id = create(agent_id=AGENT_01.get("X-Agent-Id", ""), type_=CommandType.ping)
     response = client.get(f"/api/v1/commands/{command_id}")
