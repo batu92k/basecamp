@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from server.main import COMMANDS, app
+from server.main import app
 from server.models import CommandStatus, CommandType
+from server import service
 
 client = TestClient(app)
 AGENT_01 = {"X-Agent-Id": "agent-001"}
@@ -13,7 +14,7 @@ NEXT = "/agent/v1/commands/next"
 # clear commands in each test
 @pytest.fixture(autouse=True)
 def empty_store():
-    COMMANDS.clear()
+    service.reset()
 
 
 def create(agent_id: str = "agent-001", type_: str = "ping") -> str:
