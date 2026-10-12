@@ -58,6 +58,11 @@ async def invalid_transition(
     )
 
 
+@app.exception_handler(service.StaleAttempt)
+async def stale_attempt(request: Request, exc: service.StaleAttempt) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": f"Stale attempt: {exc}"})
+
+
 # --- Endpoints ---
 
 
@@ -108,6 +113,7 @@ async def submit_result(
     return service.complete_command(
         agent_id,
         command_id,
+        body.attempt,
         CommandStatus(body.status),
         body.result,
         body.error,

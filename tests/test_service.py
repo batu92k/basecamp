@@ -66,6 +66,7 @@ def test_agent_completes_another_agents_command():
         service.complete_command(
             AGENT_002,
             command_claimed.id,
+            1,
             CommandStatus.SUCCEEDED,
             {},
             None,
@@ -73,14 +74,15 @@ def test_agent_completes_another_agents_command():
         )
 
 
-def test_complete_pending_command():
+def test_result_for_never_dispatched_command_is_stale():
     command: Command = service.create_command(
         AGENT_001, CommandType.ping, {}, datetime.now(timezone.utc)
     )
-    with pytest.raises(service.InvalidTransition):
+    with pytest.raises(service.StaleAttempt):
         service.complete_command(
             AGENT_001,
             command.id,
+            1,
             CommandStatus.SUCCEEDED,
             {},
             None,

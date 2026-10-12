@@ -23,11 +23,16 @@ def create(agent_id: str = "agent-001", type_: str = "ping") -> str:
     return response.json()["id"]
 
 
-def report(command_id: str, status: str = "SUCCEEDED", headers: dict = AGENT_01):
+def report(
+    command_id: str,
+    status: str = "SUCCEEDED",
+    attempt: int = 1,
+    headers: dict = AGENT_01,
+):
     return client.post(
         f"/agent/v1/commands/{command_id}/result",
         headers=headers,
-        json={"status": status},
+        json={"status": status, "attempt": attempt},
     )
 
 
@@ -69,14 +74,17 @@ def test_report_different_result():
 
     # report success
     response = report(
-        command_id=command_id, status=CommandStatus.SUCCEEDED, headers=AGENT_01
+        command_id=command_id,
+        status=CommandStatus.SUCCEEDED,
+        attempt=1,
+        headers=AGENT_01,
     )
 
     assert response.status_code == 200
 
     # report failure for the same command and get 409
     response = report(
-        command_id=command_id, status=CommandStatus.FAILED, headers=AGENT_01
+        command_id=command_id, status=CommandStatus.FAILED, attempt=1, headers=AGENT_01
     )
 
     assert response.status_code == 409
@@ -94,7 +102,10 @@ def test_report_for_still_pending_command():
 
     # report success and expect 409 (conflict)
     response = report(
-        command_id=command_id, status=CommandStatus.SUCCEEDED, headers=AGENT_01
+        command_id=command_id,
+        status=CommandStatus.SUCCEEDED,
+        attempt=1,
+        headers=AGENT_01,
     )
 
     assert response.status_code == 409
