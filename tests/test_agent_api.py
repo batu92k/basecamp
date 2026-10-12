@@ -166,4 +166,3 @@ def test_result_with_wrong_attempt_is_rejected():
 
     assert response.status_code == 409
     assert "Stale attempt" in response.json()["detail"]
-
