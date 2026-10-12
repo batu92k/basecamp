@@ -52,11 +52,3 @@ class CommandResult(BaseModel):
     status: Literal["SUCCEEDED", "FAILED"]
     result: dict | None = None
     error: str | None = None
-
-
-# these are the command statuses that can never change again
-TERMINAL_STATUSES = {
-    CommandStatus.SUCCEEDED,
-    CommandStatus.FAILED,
-    CommandStatus.TIMED_OUT,
-}
