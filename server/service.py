@@ -14,8 +14,8 @@ TRANSITIONS: dict[CommandStatus, set[CommandStatus]] = {
     CommandStatus.DISPATCHED: {
         CommandStatus.SUCCEEDED,
         CommandStatus.FAILED,
-        CommandStatus.PENDING,  # lease expired, attempts left (TODO: will be implemented)
-        CommandStatus.TIMED_OUT,  # lease expired, no attempts left (TODO: will be implemented)
+        CommandStatus.PENDING,  # lease expired, attempts left
+        CommandStatus.TIMED_OUT,  # lease expired, no attempts left
     },
     CommandStatus.SUCCEEDED: set(),
     CommandStatus.FAILED: set(),
