@@ -1,10 +1,11 @@
 """Command service: the only code that reads or changes commands."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from server.models import Command, CommandStatus, CommandType
 
+LEASE_SECONDS = 30  # must be longer than the slowest command
 COMMANDS: dict[str, Command] = {}  # well... pre-database solution for now :)
 
 # Every allowed status change. Anything not listed here is illegal.
@@ -76,6 +77,7 @@ def claim_next(agent_id: str, now: datetime) -> Command | None:
             _set_status(command, CommandStatus.DISPATCHED)
             command.attempts += 1
             command.dispatched_at = now
+            command.lease_expires_at = now + timedelta(seconds=LEASE_SECONDS)
             return command
     return None
 
