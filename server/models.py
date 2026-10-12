@@ -52,3 +52,4 @@ class CommandResult(BaseModel):
     status: Literal["SUCCEEDED", "FAILED"]
     result: dict | None = None
     error: str | None = None
+    attempt: int  # the `attempts` value the agent received with the command

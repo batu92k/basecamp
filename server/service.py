@@ -31,6 +31,10 @@ class InvalidTransition(Exception):
     """The requested status change is not in TRANSITIONS."""
 
 
+class StaleAttempt(Exception):
+    """A result for an attempt that is no longer the current one."""
+
+
 def check_transition(current: CommandStatus, new: CommandStatus) -> None:
     """Guard the command lifecycle state machine."""
     if new not in TRANSITIONS[current]:
@@ -85,6 +89,7 @@ def claim_next(agent_id: str, now: datetime) -> Command | None:
 def complete_command(
     agent_id: str,
     command_id: str,
+    attempt: int,
     new_status: CommandStatus,
     result: dict | None,
     error: str | None,
@@ -95,6 +100,8 @@ def complete_command(
         raise CommandNotFound(command_id)  # 404, not 403: don't reveal it exists
     if command.status == new_status:
         return command  # duplicate report (lost reply, agent retried): accept, change nothing
+    if attempt != command.attempts:
+        raise StaleAttempt(f"attempt {attempt}, current is {command.attempts}")
 
     _set_status(command, new_status)
     command.result = result
