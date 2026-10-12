@@ -156,3 +156,14 @@ def test_agent_polls_next_without_header():
     response = client.get(NEXT, headers=None)
 
     assert response.status_code == 422
+
+
+def test_result_with_wrong_attempt_is_rejected():
+    command_id = create()
+    client.get(NEXT, headers=AGENT_01)  # dispatched as attempt 1
+
+    response = report(command_id=command_id, attempt=2)
+
+    assert response.status_code == 409
+    assert "Stale attempt" in response.json()["detail"]
+
