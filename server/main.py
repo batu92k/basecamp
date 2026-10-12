@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, Header, Request, Response, status
@@ -11,7 +13,29 @@ from server.models import (
     CommandStatus,
 )
 
-app = FastAPI(title="Fleet Server API")
+# --- Reaper ---
+
+REAPER_INTERVAL_S = 1.0
+
+
+async def reaper_loop() -> None:
+    """Once a second, hand expired leases back to the queue."""
+    while True:
+        for command in service.expire_leases(utcnow()):
+            print(
+                f"reaper: {command.id} -> {command.status.value} (attempt {command.attempts})"
+            )
+        await asyncio.sleep(REAPER_INTERVAL_S)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    reaper = asyncio.create_task(reaper_loop())  # start the watchdog with the server
+    yield
+    reaper.cancel()  # stop it on shutdown
+
+
+app = FastAPI(title="Fleet Server API", lifespan=lifespan)
 
 
 def utcnow() -> datetime:

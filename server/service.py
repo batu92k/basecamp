@@ -101,3 +101,25 @@ def complete_command(
     command.error = error
     command.completed_at = now
     return command
+
+
+def expire_leases(now: datetime) -> list[Command]:
+    """Watchdog: re-queue or time out every command whose lease ran out.
+
+    Returns the commands it changed, so the caller can log them.
+    """
+    changed = []
+    for command in COMMANDS.values():
+        if command.status != CommandStatus.DISPATCHED or command.lease_expires_at > now:
+            continue
+        if command.attempts < command.max_attempts:
+            _set_status(
+                command, CommandStatus.PENDING
+            )  # retry; keeps its place in the queue
+        else:
+            _set_status(command, CommandStatus.TIMED_OUT)
+            command.error = f"lease expired {command.attempts} times"
+            command.completed_at = now
+        command.lease_expires_at = None
+        changed.append(command)
+    return changed
