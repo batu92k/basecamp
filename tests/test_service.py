@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -109,3 +109,36 @@ def test_lease_expiry_requeues_then_times_out():
 
     assert command.status == CommandStatus.TIMED_OUT
     assert service.claim_next(AGENT_001, now) is None  # never handed out again
+
+
+def test_late_result_from_old_attempt_is_rejected():
+    command = new_command()
+    service.claim_next(AGENT_001, T0)  # attempt 1
+    service.expire_leases(
+        T0 + timedelta(seconds=service.LEASE_SECONDS)
+    )  # back to PENDING
+    service.claim_next(AGENT_001, T0 + timedelta(seconds=31))  # attempt 2
+
+    # send the result from attempt 1 (which is already expired and placed to pending by reaper)
+    with pytest.raises(service.StaleAttempt):
+        service.complete_command(
+            AGENT_001,
+            command.id,
+            1,
+            CommandStatus.SUCCEEDED,
+            {},
+            None,
+            T0 + timedelta(seconds=32),
+        )
+
+    # send the result for the current attempt
+    done = service.complete_command(
+        AGENT_001,
+        command.id,
+        2,
+        CommandStatus.SUCCEEDED,
+        {},
+        None,
+        T0 + timedelta(seconds=33),
+    )
+    assert done.status == CommandStatus.SUCCEEDED
