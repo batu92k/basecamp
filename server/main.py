@@ -88,8 +88,12 @@ async def get_command(command_id: str) -> Command:
 # --- Agent API ---
 
 
-def get_agent_id(x_agent_id: str = Header()) -> str:
-    """Who is calling. Placeholder: trusts a header. Later replace this with a token check."""
+async def get_agent_id(
+    x_agent_id: str = Header(),
+    x_firmware_version: str | None = Header(default=None),
+) -> str:
+    """Who is calling. Every agent request is also a heartbeat."""
+    service.touch_agent(x_agent_id, x_firmware_version, utcnow())
     return x_agent_id
 
 

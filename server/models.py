@@ -53,3 +53,11 @@ class CommandResult(BaseModel):
     result: dict | None = None
     error: str | None = None
     attempt: int  # the `attempts` value the agent received with the command
+
+
+class Agent(BaseModel):
+    "What the server knows about the agent"
+
+    id: str
+    firmware_version: str | None = None
+    last_seen_at: datetime

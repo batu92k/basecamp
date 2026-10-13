@@ -3,10 +3,11 @@
 import uuid
 from datetime import datetime, timedelta
 
-from server.models import Command, CommandStatus, CommandType
+from server.models import Agent, Command, CommandStatus, CommandType
 
 LEASE_SECONDS = 30  # must be longer than the slowest command
 COMMANDS: dict[str, Command] = {}  # well... pre-database solution for now :)
+AGENTS: dict[str, Agent] = {}
 
 # Every allowed status change. Anything not listed here is illegal.
 TRANSITIONS: dict[CommandStatus, set[CommandStatus]] = {
@@ -50,6 +51,7 @@ def _set_status(command: Command, new_status: CommandStatus) -> None:
 def reset() -> None:
     """Empty the store. Will be used by tests."""
     COMMANDS.clear()
+    AGENTS.clear()
 
 
 def create_command(
@@ -130,3 +132,16 @@ def expire_leases(now: datetime) -> list[Command]:
         command.lease_expires_at = None
         changed.append(command)
     return changed
+
+
+def touch_agent(agent_id: str, firmware_version: str | None, now: datetime) -> Agent:
+    """Heartbeat: record that this agent is alive, and what it is running."""
+    agent = AGENTS.get(agent_id)
+    if agent is None:
+        agent = Agent(id=agent_id, last_seen_at=now)
+        AGENTS[agent_id] = agent
+    agent.last_seen_at = now
+    if firmware_version is not None:
+        agent.firmware_version = firmware_version
+    print(AGENTS)  # Keep it for debugging reasons
+    return agent
