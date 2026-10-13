@@ -3,8 +3,25 @@
 import argparse
 import time
 from datetime import datetime, timezone
+from collections import OrderedDict
 
 import httpx
+
+
+class ResultCache:
+    """Ring buffer, keeps recently executed commands, so a re-delivered command never runs twice."""
+
+    def __init__(self, size: int = 100) -> None:
+        self.size = size
+        self._items: OrderedDict[str, dict] = OrderedDict()
+
+    def get(self, command_id: str) -> dict | None:
+        return self._items.get(command_id)
+
+    def put(self, command_id: str, outcome: dict) -> None:
+        self._items[command_id] = outcome
+        if len(self._items) > self.size:
+            self._items.popitem(last=False)  # drop the oldest, so be a ring buffer :)
 
 
 def handle_ping(payload: dict) -> dict:
