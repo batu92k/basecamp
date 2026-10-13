@@ -135,11 +135,15 @@ def report(client: httpx.Client, agent_id: str, command: dict, outcome: dict) ->
 def main() -> None:
     parser = argparse.ArgumentParser(description="Simulated fleet agent")
     parser.add_argument("--agent-id", default="agent-001")
+    parser.add_argument("--firmware-version", default="1.0.0")
     parser.add_argument("--server", default="http://127.0.0.1:8000")
     parser.add_argument(
         "--interval", type=float, default=2.0, help="seconds between empty polls"
     )
     args = parser.parse_args()
+
+    STATE["firmware_version"] = args.firmware_version
+
     try:
         run(args.server, args.agent_id, args.interval)
     except KeyboardInterrupt:
