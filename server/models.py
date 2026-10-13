@@ -11,6 +11,7 @@ class CommandType(str, Enum):
     ping = "ping"
     sleep = "sleep"
     get_status = "get_status"
+    update_firmware = "update_firmware"
 
 
 class CommandStatus(str, Enum):

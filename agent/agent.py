@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 
 import httpx
 
+STATE = {"firmware_version": "1.0.0"}
+BOOT = time.monotonic()
+
 
 class ResultCache:
     """Ring buffer, keeps recently executed commands, so a re-delivered command never runs twice."""
@@ -32,6 +35,26 @@ def handle_sleep(payload: dict) -> dict:
     seconds = float(payload.get("seconds", 1))
     time.sleep(seconds)
     return {"slept_s": seconds}
+
+
+def handle_get_status(payload: dict) -> dict:
+    import random
+
+    return {
+        "firmware_version": STATE["firmware_version"],
+        "uptime_s": round(time.monotonic() - BOOT, 1),
+        "cpu_temp_c": round(random.uniform(40.0, 60.0), 1),  # simulated sensor
+    }
+
+
+def handle_update_firmware(payload: dict) -> dict:
+    version = payload[
+        "version"
+    ]  # dont use .get so if it's missing -> KeyError -> FAILED, which is correct
+    time.sleep(float(payload.get("duration_s", 10)))  # simulated download + flash
+    previous = STATE["firmware_version"]
+    STATE["firmware_version"] = version
+    return {"previous_version": previous, "firmware_version": version}
 
 
 HANDLERS = {
@@ -61,7 +84,10 @@ def run(server: str, agent_id: str, interval: float) -> None:
         print(f"[{agent_id}] polling {server} every {interval}s")
         while True:
             try:
-                response = client.get("/agent/v1/commands/next")
+                response = client.get(
+                    "/agent/v1/commands/next",
+                    headers={"X-Firmware-Version": STATE["firmware_version"]},
+                )
                 if response.status_code == 204:
                     time.sleep(interval)
                     continue
