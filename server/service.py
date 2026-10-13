@@ -143,5 +143,4 @@ def touch_agent(agent_id: str, firmware_version: str | None, now: datetime) -> A
     agent.last_seen_at = now
     if firmware_version is not None:
         agent.firmware_version = firmware_version
-    print(AGENTS)  # Keep it for debugging reasons
     return agent

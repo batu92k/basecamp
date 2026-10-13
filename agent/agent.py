@@ -60,6 +60,7 @@ def handle_update_firmware(payload: dict) -> dict:
 HANDLERS = {
     "ping": handle_ping,
     "sleep": handle_sleep,
+    "update_firmware": handle_update_firmware,
 }
 
 
