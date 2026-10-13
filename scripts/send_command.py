@@ -7,7 +7,7 @@ import time
 
 import httpx
 
-TERMINAL = {"SUCCEEDED", "FAILED"}
+TERMINAL = {"SUCCEEDED", "FAILED", "TIMED_OUT"}
 
 
 def main() -> int:

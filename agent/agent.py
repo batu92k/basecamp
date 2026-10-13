@@ -2,8 +2,8 @@
 
 import argparse
 import time
-from datetime import datetime, timezone
 from collections import OrderedDict
+from datetime import datetime, timezone
 
 import httpx
 
@@ -55,6 +55,7 @@ def execute(command: dict) -> dict:
 
 
 def run(server: str, agent_id: str, interval: float) -> None:
+    cache = ResultCache()
     headers = {"X-Agent-Id": agent_id}
     with httpx.Client(base_url=server, headers=headers, timeout=10.0) as client:
         print(f"[{agent_id}] polling {server} every {interval}s")
@@ -68,14 +69,41 @@ def run(server: str, agent_id: str, interval: float) -> None:
                 command = response.json()
                 print(f"[{agent_id}] got {command['type']} {command['id']}")
 
-                outcome = execute(command)
-                client.post(
-                    f"/agent/v1/commands/{command['id']}/result", json=outcome
-                ).raise_for_status()
+                command = response.json()
+                outcome = cache.get(command["id"])
+                if outcome is None:  # check if we executed the command before
+                    print(
+                        f"[{agent_id}] got {command['type']} {command['id']} (attempt {command['attempts']})"
+                    )
+                    outcome = execute(command)
+                    cache.put(
+                        command["id"], outcome
+                    )  # save before reporting: the report may be lost
+                else:
+                    print(
+                        f"[{agent_id}] {command['id']} already done, re-sending saved result"
+                    )
+                report(client, agent_id, command, outcome)
                 print(f"[{agent_id}] reported {outcome['status']}")
             except httpx.HTTPError as exc:
                 print(f"[{agent_id}] server error: {exc!r}, retrying in {interval}s")
                 time.sleep(interval)
+
+
+def report(client: httpx.Client, agent_id: str, command: dict, outcome: dict) -> None:
+    """Send the outcome, fenced with the attempt number this delivery came with."""
+    response = client.post(
+        f"/agent/v1/commands/{command['id']}/result",
+        json={**outcome, "attempt": command["attempts"]},
+    )
+    if response.status_code == 409:
+        # Lease expired while we were working; the server will re-deliver,
+        # and the cache will answer for us then
+        print(
+            f"[{agent_id}] result for {command['id']} rejected: {response.json()['detail']}"
+        )
+        return
+    response.raise_for_status()
 
 
 def main() -> None:
