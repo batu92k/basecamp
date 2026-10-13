@@ -7,6 +7,12 @@ from server.models import Command, CommandStatus, CommandType
 
 AGENT_001 = "agent-001"
 AGENT_002 = "agent-002"
+T0 = datetime(2026, 10, 11, 12, 0, tzinfo=timezone.utc)
+
+
+def new_command(agent_id: str = AGENT_001, at: datetime = T0):
+    """Create a command with default T0 time, this will be helpful when testing expiry feature"""
+    return service.create_command(agent_id, CommandType.ping, {}, at)
 
 
 @pytest.fixture(autouse=True)
@@ -88,3 +94,18 @@ def test_result_for_never_dispatched_command_is_stale():
             None,
             datetime.now(timezone.utc),
         )
+
+
+def test_lease_expiry_requeues_then_times_out():
+    """Expire the lease of command until no more attempts left then expect timed out
+    from command status"""
+    command = new_command()
+    now = T0
+    for attempt in range(1, command.max_attempts + 1):
+        claimed = service.claim_next(AGENT_001, now)
+        assert claimed.attempts == attempt
+        now = claimed.lease_expires_at  # jump straight to the deadline
+        service.expire_leases(now)
+
+    assert command.status == CommandStatus.TIMED_OUT
+    assert service.claim_next(AGENT_001, now) is None  # never handed out again
