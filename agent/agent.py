@@ -79,6 +79,7 @@ HANDLERS = {
     "ping": handle_ping,
     "sleep": handle_sleep,
     "update_firmware": handle_update_firmware,
+    "get_status": handle_get_status
 }
 
 
