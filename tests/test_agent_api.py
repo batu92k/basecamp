@@ -166,3 +166,20 @@ def test_result_with_wrong_attempt_is_rejected():
 
     assert response.status_code == 409
     assert "Stale attempt" in response.json()["detail"]
+
+
+def test_agent_get_oldest_command_first():
+    first_command_id = create(
+        agent_id=AGENT_01.get("X-Agent-Id", ""), type_=CommandType.ping
+    )
+    second_command_id = create(
+        agent_id=AGENT_01.get("X-Agent-Id", ""), type_=CommandType.get_status
+    )
+
+    #  poll the command and expect first command id
+    response = client.get(NEXT, headers=AGENT_01)
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["id"] == first_command_id
+    assert response_json["id"] != second_command_id
+    assert response_json["attempts"] == 1

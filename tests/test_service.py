@@ -142,3 +142,52 @@ def test_late_result_from_old_attempt_is_rejected():
         T0 + timedelta(seconds=33),
     )
     assert done.status == CommandStatus.SUCCEEDED
+
+
+def test_late_result_after_requeue():
+    command = new_command()
+    service.claim_next(AGENT_001, T0)  # attempt 1
+    service.expire_leases(
+        T0 + timedelta(seconds=service.LEASE_SECONDS)
+    )  # back to PENDING
+
+    with pytest.raises(service.InvalidTransition):
+        service.complete_command(
+            AGENT_001,
+            command.id,
+            1,
+            CommandStatus.SUCCEEDED,
+            {},
+            None,
+            T0 + timedelta(seconds=32),
+        )
+
+
+def test_claim_sets_the_lease():
+    command = new_command()
+    assert command.lease_expires_at == None  # lease not set on command creation
+
+    command = service.claim_next(AGENT_001, T0)  # attempt 1
+    assert command.lease_expires_at is not None
+    assert command.lease_expires_at == T0 + timedelta(seconds=service.LEASE_SECONDS)
+
+
+def test_touch_agent_twice_updates_the_same_agent():
+    first = service.touch_agent(AGENT_001, "1.0.0", T0)
+    second = service.touch_agent(AGENT_001, None, T0 + timedelta(seconds=30))
+
+    assert len(service.AGENTS) == 1  # still one agent, not a new one per poll
+    assert second is first  # the same record was updated in place
+    assert second.last_seen_at == T0 + timedelta(seconds=30)  # the later heartbeat wins
+    assert (
+        second.firmware_version == "1.0.0"
+    )  # None means "not reported", so it is kept
+
+
+def test_touch_agent_records_a_new_firmware_version():
+    service.touch_agent(AGENT_001, "1.0.0", T0)
+    agent = service.touch_agent(AGENT_001, "1.1.0", T0 + timedelta(seconds=30))
+
+    assert (
+        agent.firmware_version == "1.1.0"
+    )  # what update_firmware will show on the next poll
