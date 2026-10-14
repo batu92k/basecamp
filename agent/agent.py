@@ -1,12 +1,12 @@
 """Remote agent: polls the server for commands, simulates running them, reports results."""
 
 import argparse
+import random
 import time
 from collections import OrderedDict
 from datetime import datetime, timezone
 
 import httpx
-import random
 
 STATE = {"firmware_version": "1.0.0"}
 BOOT = time.monotonic()
@@ -38,7 +38,9 @@ class Backoff:
 
     def next_delay(self) -> float:
         delay = random.uniform(0, min(self.cap, self.base * 2**self.failures))
-        self.failures = min(self.failures + 1, 20)  # saturate: 2**n must not overflow a float
+        self.failures = min(
+            self.failures + 1, 20
+        )  # saturate: 2**n must not overflow a float
         return delay
 
     def reset(self) -> None:
