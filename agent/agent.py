@@ -6,6 +6,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 
 import httpx
+import random
 
 STATE = {"firmware_version": "1.0.0"}
 BOOT = time.monotonic()
@@ -27,6 +28,23 @@ class ResultCache:
             self._items.popitem(last=False)  # drop the oldest, so be a ring buffer :)
 
 
+class Backoff:
+    """Exponential backoff mechanism"""
+
+    def __init__(self, base: float = 0.5, cap: float = 30.0) -> None:
+        self.base = base
+        self.cap = cap
+        self.failures = 0
+
+    def next_delay(self) -> float:
+        delay = random.uniform(0, min(self.cap, self.base * 2**self.failures))
+        self.failures = min(self.failures + 1, 20)  # saturate: 2**n must not overflow a float
+        return delay
+
+    def reset(self) -> None:
+        self.failures = 0
+
+
 def handle_ping(payload: dict) -> dict:
     return {"pong": True, "agent_time": datetime.now(timezone.utc).isoformat()}
 
@@ -38,8 +56,6 @@ def handle_sleep(payload: dict) -> dict:
 
 
 def handle_get_status(payload: dict) -> dict:
-    import random
-
     return {
         "firmware_version": STATE["firmware_version"],
         "uptime_s": round(time.monotonic() - BOOT, 1),
@@ -81,6 +97,7 @@ def execute(command: dict) -> dict:
 def run(server: str, agent_id: str, interval: float) -> None:
     cache = ResultCache()
     headers = {"X-Agent-Id": agent_id}
+    backoff = Backoff()
     with httpx.Client(base_url=server, headers=headers, timeout=10.0) as client:
         print(f"[{agent_id}] polling {server} every {interval}s")
         while True:
@@ -89,6 +106,7 @@ def run(server: str, agent_id: str, interval: float) -> None:
                     "/agent/v1/commands/next",
                     headers={"X-Firmware-Version": STATE["firmware_version"]},
                 )
+                backoff.reset()  # the server answered: back to fast retries
                 if response.status_code == 204:
                     time.sleep(interval)
                     continue
@@ -113,8 +131,9 @@ def run(server: str, agent_id: str, interval: float) -> None:
                 report(client, agent_id, command, outcome)
                 print(f"[{agent_id}] reported {outcome['status']}")
             except httpx.HTTPError as exc:
-                print(f"[{agent_id}] server error: {exc!r}, retrying in {interval}s")
-                time.sleep(interval)
+                delay = backoff.next_delay()
+                print(f"[{agent_id}] server error: {exc!r}, retrying in {delay:.1f}s")
+                time.sleep(delay)
 
 
 def report(client: httpx.Client, agent_id: str, command: dict, outcome: dict) -> None:
