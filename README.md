@@ -14,7 +14,7 @@ server outages with backoff, and never runs a re-delivered command twice.
 Python 3.12 or newer (developed on Python 3.14 in WSL Ubuntu).
 
 ```bash
-git clone <repo-url> && cd basecamp
+git clone https://github.com/batu92k/basecamp.git && cd basecamp
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 ```
